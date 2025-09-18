@@ -1,0 +1,6 @@
+website:
+  sidebar:
+    contents:
+      - index.ipynb
+      - 00_core copy.ipynb
+      - 27_stal_massabalans.ipynb

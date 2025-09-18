@@ -1,16 +1,58 @@
 project:
   type: website
 
+execute:
+  freeze: auto
+
+bibliography: references.bib
+
+
+brand: /_brand.yml
+
+# theme: 
+#   - lumen
+#   - brand
+
+theme:
+  light: 
+    - flatly
+    - brand
+  dark: 
+    - darkly
+    - brand
+
 format:
   html:
-    theme: cosmo
+    #title-block-banner: '#AA64A5' # '#442244'
     css: styles.css
+
     toc: true
-    keep-md: true
-  commonmark: default
+    toc-depth: 4
+    mathjax: true
+    code-fold: true
+
+  typst:
+    keep-typ: true
+    file-extension: .pdf
+    papersize: a4
+    colorlinks: true
+    toc: true
+    execute:
+      warning: false
+    include-in-header: 
+      - text: '#let name1 = "include-in-header"'
+      - text: '#set page(footer: context [])'
+      - text: '#set page(numbering: none)'
+      - text: '#set text(fallback: false)'
+    include-before-body: 
+      - text: '#let name2 = "include-before-body"'
+      - text: '#align(center+bottom)[#box(image("/branding/Whysor-RGB-Logo-pay_off-Dynamic_dark.svg", width: 100% - 40mm))]'
+      - text: '#pagebreak()'
+    include-after-body: 
+      - text: '#let name3 = "include-after-body"'
 
 website:
-  twitter-card: true
+  twitter-card: false
   open-graph: true
   repo-actions: [issue]
   navbar:
@@ -19,4 +61,4 @@ website:
   sidebar:
     style: floating
 
-metadata-files: [nbdev.yml, sidebar.yml]
+metadata-files: [nbdev.yml, sidebar.yml]  

@@ -1,0 +1,84 @@
+color:
+  palette: 
+    white: "#ffffff"
+    black: "#000000"
+    playful: "#AA64A5"
+    grounded: "#F5F5F5"
+    dyndark: "#282828"
+    wonder: "#FFFFFF"
+    blue: "#0066CC"
+    burgundy: "#A80000"
+    teal: "#008080"
+    orange: "#FFA500"
+
+  # background: grounded
+  # primary: dyndark
+  # secondary: "#AA64A5"
+
+  foreground: black
+  background: wonder
+
+  primary: playful
+  secondary: dyndark
+  tertiary: teal
+  success: playful
+  info: teal
+  warning: orange
+  danger: burgundy
+  light: white
+  dark: "#404041"
+
+typography:
+  fonts:
+    - family: Open Sans
+      source: google
+    - family: Sora
+      source: google
+    - family: Space Mono
+      source: google
+    - family: Langar
+      source: google
+  base: 
+    family: Open Sans
+    line-height: 1.5
+
+  headings: 
+    family: Sora
+    weight: light
+    line-height: 2
+    color: playful
+    
+  link:
+    decoration: underline
+
+  monospace: 
+    family: Space Mono
+    size: 0.8em
+  monospace-inline:
+    color: "#222222"
+    background-color: "#ddeaf1" # or use a named color from `color`
+  monospace-block: 
+    background-color: "#f4eef8"
+
+
+# logo:
+#   images: 
+#     icon-dyndark-svg: "/branding/Whysor-RGB-Icon-Dynamic_dark.svg"
+#     icon-dyndark-png: "/branding/Whysor-RGB-Icon-Dynamic_dark.png"
+#     icon-wondering-png: "/branding/Whysor-RGB-Icon-Wondering_white.png"
+#     logo-dyndark-svg: "/branding/Whysor-RGB-Logo-Dynamic_dark.svg"
+#     logo-dyndark-png: "/branding/Whysor-RGB-Logo-Dynamic_dark.png"
+#     logo-payoff-dyndark-png: 
+#       path: "/branding/Whysor-RGB-Logo-pay_off-Dynamic_dark.png"
+#     logo-payoff-dyndark-svg: 
+#       path: "/branding/Whysor-RGB-Logo-pay_off-Dynamic_dark.svg"
+#   small: 
+#     dark: icon-wondering-png
+#     light: icon-dyndark-png
+#   medium: 
+#     light: logo-dyndark-svg
+#     dark: logo-dyndark-png
+#   large:
+#     light: logo-payoff-dyndark-svg
+#     dark: logo-payoff-dyndark-png
+
