@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "openstal"
+  site-url: "https://fenke.github.io/openstal"
+  description: "Open stal NH3 emissie berekening"
+  repo-branch: main
+  repo-url: "https://github.com/fenke/openstal"
