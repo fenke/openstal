@@ -2,8 +2,9 @@
 
 # %% auto 0
 __all__ = ['default_pco2_parameters', 'gas_density', 'gas_density_from_sensor_measurment', 'PCO2_melkvee', 'PCO2_pinken',
-           'PCO2_temperatuurcorrectie', 'create_pco2_function_mapping', 'PCO2_calculation', 'resample_data',
-           'calculate_emission_ratio', 'extract_column_names', 'calculate_emission']
+           'PCO2_temperatuurcorrectie', 'create_pco2_function_mapping', 'PCO2_calculation',
+           'find_production_column_names', 'extract_production_column_names', 'find_emission_column_names',
+           'extract_emission_column_names', 'resample_data', 'calculate_emission_ratio', 'calculate_emission']
 
 # %% ../../nbs/27_stal_massabalans.ipynb 3
 import numpy as np
@@ -199,7 +200,189 @@ def PCO2_calculation(
         **kwargs
 )
 
-# %% ../../nbs/27_stal_massabalans.ipynb 44
+# %% ../../nbs/27_stal_massabalans.ipynb 45
+def flatten_column_mapping(column_mapping: dict) -> list:
+    '''Flatten the column mapping dictionary to a list of columns'''
+    result = []
+    for values in column_mapping.values():
+        if isinstance(values, dict):
+            result += flatten_column_mapping(values)
+        elif isinstance(values, list):
+            result += values
+        else:
+            result += [values]
+    return result
+
+
+# %% ../../nbs/27_stal_massabalans.ipynb 52
+def find_production_column_names(data: DataFrame):
+    '''Find the column names for the co2 production columns in the VERA data'''
+
+    datacolumns = set(data.columns)
+    columnnames = {
+        'drachtdagen': [col for col in datacolumns if 'drachtdagen' in col.lower() or 'pregnancy' in col.lower()],
+    }
+
+    datacolumns = set(data.columns) - set(flatten_column_mapping(columnnames))
+    columnnames.update({
+        'energievoeding': [col for col in datacolumns if 'energy' in col.lower() or 'energie' in col.lower()],
+    })
+    
+    datacolumns = set(data.columns) - set(flatten_column_mapping(columnnames))
+    columnnames.update({
+            'melkproductie': [
+                col 
+                for col in datacolumns 
+                if ('milk production' in col.lower() and not 'C3' in col ) or 'melkproductie' in col.lower()
+            ],
+    })
+    
+    datacolumns = set(data.columns) - set(flatten_column_mapping(columnnames))
+    columnnames.update({
+            'gewichtstoename': [
+                col 
+                for col in datacolumns 
+                if 'weight gain' in col.lower() or 'gewichtstoename' in col.lower()
+            ]
+    })
+
+    datacolumns = set(data.columns) - set(flatten_column_mapping(columnnames))
+
+    columnnames.update({
+            'gewicht': [col for col in datacolumns if 'weight' in col.lower() or 'gewicht' in col.lower()],
+    })
+
+    return  columnnames
+
+# %% ../../nbs/27_stal_massabalans.ipynb 55
+def extract_production_column_names(
+    data: DataFrame # DataFrame with measurement data
+) -> dict:
+    
+    '''Extract column names for the co2 production columns from the DataFrame'''
+
+    columnnames = find_production_column_names(data)  
+
+    def is_heifer(colname):
+        return 'heifer' in colname.lower() or 'jongvee' in colname.lower() or 'pinken' in colname.lower()
+    def is_cow(colname):
+        return 'cow' in colname.lower() or 'koeien' in colname.lower() or 'melkvee' in colname.lower()
+    def is_dry(colname):
+        return 'dry' in colname.lower() or 'droog' in colname.lower()
+    def is_milking(colname):
+        return 'milking' in colname.lower() or 'melk' in colname.lower() or 'melkvee' in colname.lower()  
+    def is_pregnant(colname):
+        return 'pregnant' in colname.lower() or 'drachtig' in colname.lower() or 'pregnancy' in colname.lower()
+
+    categories = {
+        'melkvee': {
+            'gewicht' : [
+                cn 
+                for cn in columnnames['gewicht'] 
+                if is_milking(cn) and not is_heifer(cn)
+            ],
+            'drachtdagen' : [
+                cn 
+                for cn in columnnames['drachtdagen'] 
+                if is_pregnant(cn) and not is_heifer(cn) and not is_dry(cn)
+            ],
+        },
+        'droogstaande koeien': {
+            'gewicht' : [
+                cn 
+                for cn in columnnames['gewicht'] 
+                if is_dry(cn) and not is_heifer(cn)
+            ],
+            'drachtdagen' : [
+                cn 
+                for cn in columnnames['drachtdagen'] 
+                if is_dry(cn) and not is_heifer(cn) and is_pregnant(cn)
+            ],
+        },
+        'drachtig jongvee': {
+            'gewicht' : [
+                cn 
+                for cn in columnnames['gewicht'] 
+                if is_heifer(cn) and is_pregnant(cn)
+            ],
+            'drachtdagen' : [
+                cn 
+                for cn in columnnames['drachtdagen'] 
+                if is_heifer(cn) and is_pregnant(cn)
+            ],
+            'energievoeding' : [
+                cn 
+                for cn in columnnames['energievoeding'] 
+                if is_heifer(cn)
+            ],
+            'gewichtstoename' : [
+                cn 
+                for cn in columnnames['gewichtstoename'] 
+                if is_heifer(cn)
+            ]
+        },
+        'niet drachtig jongvee': {
+            'gewicht' : [
+                cn 
+                for cn in columnnames['gewicht'] 
+                if is_heifer(cn) and not is_pregnant(cn)
+            ],
+            'energievoeding' : [
+                cn 
+                for cn in columnnames['energievoeding'] 
+                if is_heifer(cn)
+            ],
+            'gewichtstoename' : [
+                cn 
+                for cn in columnnames['gewichtstoename'] 
+                if is_heifer(cn)
+            ]
+
+        }
+    }
+
+    return categories
+
+# %% ../../nbs/27_stal_massabalans.ipynb 58
+def find_emission_column_names(data: DataFrame):
+    '''Find column names for NH3, CO2 and temperature from the DataFrame'''
+
+    columnnames = {
+        'nh3': [col for col in data.columns if any(name in col.lower() for name in MOLECULAR_NAMES['nh3']+['nh3'])],
+        'co2': [col for col in data.columns if any(name in col.lower() for name in MOLECULAR_NAMES['co2']+['co2'])],
+        'temp': [col for col in data.columns if 'temperatu' in col.lower()],
+        'rh': [col for col in data.columns if 'vochtigheid' in col.lower() or 'rh' in col.lower()],
+        'wind': [col for col in data.columns if 'wind' in col.lower()]
+    }
+
+    return columnnames
+
+
+# %% ../../nbs/27_stal_massabalans.ipynb 60
+def extract_emission_column_names(
+        data: DataFrame # DataFrame with measurement data
+) -> dict:
+    '''Extract column names for NH3, CO2 and temperature from the DataFrame'''
+
+    columnnames = find_emission_column_names(data)
+
+    locations = {
+            'binnen': ['binnen', 'inside', 'stal'],
+            'buiten': ['buiten', 'outside', 'outdoor']
+        }
+    
+    columnmapping = {K:{} for K in locations.keys()}
+    for location_key, location_items in locations.items():
+        for measure, columns in columnnames.items():
+            for location_name in location_items:
+
+                columnmapping[location_key][measure] = columnmapping[location_key].get(measure,[]) + [col for col in columns if location_name in col.lower()]
+
+    columnmapping['buiten']['wind'] = columnmapping['buiten'].get('wind', []) + columnnames.get('wind', [])
+    
+    return columnmapping
+
+# %% ../../nbs/27_stal_massabalans.ipynb 67
 def resample_data(
         data: DataFrame,    # DataFrame with measurement data
         interval: str,      # resampling interval (e.g. '10min' for 10 minutes )
@@ -210,7 +393,7 @@ def resample_data(
 
     return data.mask(data < 0).resample(interval).interpolate(method, limit=3).dropna(how='any')
 
-# %% ../../nbs/27_stal_massabalans.ipynb 47
+# %% ../../nbs/27_stal_massabalans.ipynb 71
 def calculate_emission_ratio(
         NH3_stal,        # NH3 concentration in the barn in mg/m3
         NH3_buiten,      # NH3 concentration outside in mg/m3
@@ -229,28 +412,7 @@ def calculate_emission_ratio(
     return nh3_diff / co2_diff  # dimensionless ratio
     
 
-# %% ../../nbs/27_stal_massabalans.ipynb 49
-def extract_column_names(
-        data: DataFrame # DataFrame with measurement data
-) -> dict:
-    '''Extract column names for NH3, CO2 and temperature from the DataFrame'''
-
-    nh3_columns = [col for col in data.columns if any(name in col.lower() for name in MOLECULAR_NAMES['nh3'])]
-    co2_columns = [col for col in data.columns if any(name in col.lower() for name in MOLECULAR_NAMES['co2'])]
-    temperature_columns = [col for col in data.columns if 'temperatu' in col.lower()]
-
-    columnmapping = {
-        location: {
-            'nh3':  [col for col in nh3_columns if location in col.lower()],
-            'co2':  [col for col in co2_columns if location in col.lower()],
-            'temp': [col for col in temperature_columns if location in col.lower()]
-        }
-
-        for location in ['stal', 'buiten']
-    }
-    return columnmapping
-
-# %% ../../nbs/27_stal_massabalans.ipynb 51
+# %% ../../nbs/27_stal_massabalans.ipynb 74
 def calculate_emission(
         data: DataFrame,        # DataFrame with measurement data
         pco2_parameters: dict,  # parameters for the PCO2 calculation
